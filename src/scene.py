@@ -1,6 +1,9 @@
 import pygame
 import utils
 import settings as s
+from pygame import Color 
+from utils import HSV
+import numpy as np
 
 class SceneManager:
     def __init__(self, display):
@@ -46,7 +49,6 @@ class SceneManager:
         for s in scenes:
             self.push(s)
 
-
 class Scene:
     def __init__(self):
         pass
@@ -60,6 +62,129 @@ class Scene:
         pass
     def render(self, sm):
         pass
+
+class PenaltyScene(Scene):
+    def __init__(self):
+        # self.window = pygame.Surface((s.WINDOW_WIDTH, s.WINDOW_HEIGHT))
+        
+        self.window = pygame.Surface((s.WINDOW_WIDTH, s.WINDOW_HEIGHT))
+        self.shooter  = 1
+        self.keeper   = 2
+        self.field_color = HSV(h=0)
+        self.field_width   = 50
+        self.field_height  = 40
+        self.penalty_area_width = 800
+        self.penalty_area_width = 400
+        
+        self.ticks = 0
+        
+    def onEnter(self):
+        # globals.soundManager.playMusicFade('solace')
+
+        self.ball_x = s.WINDOW_WIDTH/2
+        self.ball_y = 800
+        
+        pass
+    
+    def input(self, sm):
+        pass
+    
+    def update(self, sm):
+        
+        self.ticks +=1
+        pass
+    
+
+    def render(self, sm):
+        sm.display.fill(s.BLACK)
+        #
+        self.window.fill(s.GREEN)
+
+        pygame.draw.rect(self.window, s.WHITE, (-50, 100, (s.WINDOW_WIDTH+100), (s.WINDOW_HEIGHT)), 10)
+        pygame.draw.rect(self.window, s.WHITE, (50, 100, (s.WINDOW_WIDTH-2*50), (s.WINDOW_HEIGHT-2*50-50)), 10)
+        pygame.draw.rect(self.window, s.WHITE, (400, -50, 800, 160), 10)
+        pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2, 800), 10)
+        # pygame.draw.circle(self.window, s.WHITE, (400, 400), 10)
+        
+        power = 50
+
+                
+        dist_x = -400
+        dist_y = 800-100
+        curve_x = 100
+        
+        duration = 20
+        ball_dx = dist_x / duration
+        ball_dy = dist_y / duration
+        
+        # ball_dy = 10
+        # travel_time =  dist_y / ball_dy
+        # ball_dx = dist_x / travel_time
+        # ball_dy = dist_y / travel_time
+        
+        if self.ticks > 60:
+
+            ((self.ticks-60)/duration)**2
+            
+            self.ball_x += ball_dx
+            self.ball_y -= ball_dy
+        
+        
+        if self.ball_y < 50:
+            
+            if self.ball_x > 400 and self.ball_x < 800:
+                
+                pygame.draw.circle(self.window, s.ORANGE, (100, 200), 30)
+            else:
+                pygame.draw.circle(self.window, s.RED, (400, 200), 30)
+                
+            
+                
+        trajectory = self._get_trajectory(dist_x, dist_y, curve_x, power)
+        print(trajectory)
+             
+
+        pygame.draw.circle(self.window, s.ORANGE, (self.ball_x, self.ball_y), 30)
+        
+        pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2-395, 100), 5)
+        pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2+395, 100), 5)
+        
+        
+        pygame.draw.circle(self.window, s.RED, (s.WINDOW_WIDTH/2, 100), 40)
+        pygame.draw.circle(self.window, s.BLUE, (s.WINDOW_WIDTH/2, 950), 40)
+        
+        
+        sm.display.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
+        # red = max(0,min(255, self.player.v_y*5))
+    
+    def _get_trajectory(self, dist_x, dist_y, curve_x, speed):
+        
+        duration = 120 - speed
+        frames = np.linspace(0,1, duration)
+        
+        ball_y = frames * dist_y
+        ball_x = frames * (dist_x + curve_x) - frames**2 * curve_x
+        
+        return ball_x, ball_y
+        # for entity in self.all_sprites:
+        #     self.window.blit(entity.surf, entity.rect)
+            
+        # self.window.blit(self.player.surf, self.player.rect)
+        
+        # self.screen.fill(s.BLACK)
+        # self.screen.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
+        
+        # font = pygame.font.SysFont('Arial', 16)
+        # fps = font.render(f"FPS: {round(self.clock.get_fps(),2)}", True, (255,255,255))
+        # speed = font.render(f"Speed: {round(self.player.v_y,1)}",True,(255,255,255))
+        # ticks = font.render(f"Ticks: {self.ticks}",True,(255,255,255))
+        # distance_left = font.render(f"Distance left: {int(s.TRACK_LENGTH-self.player.s_y)}",True,(255,255,255))
+        
+        # self.screen.blit(fps,(820,20))
+        # self.screen.blit(speed, (820, 60))
+        # self.screen.blit(ticks, (820, 100))
+        # self.screen.blit(distance_left,(820,140))
+    
 
 class MainMenuScene(Scene):
     def __init__(self):
@@ -76,7 +201,6 @@ class MainMenuScene(Scene):
         #     sm.push(FadeTransitionScene([self], [PlayerSelectScene()]))
         # if inputStream.keyboard.isKeyPressed(pygame.K_ESCAPE):
         #     sm.pop()
-        
         
         for event in pygame.event.get():
                 
@@ -351,38 +475,6 @@ class FadeTransitionScene(TransitionScene):
         overlay.fill(globals.BLACK)
         screen.blit(overlay, (0,0))
         
-class PenaltyScene(Scene):
-    def __init__(self):
-        pass
-    def update(self, sm):
-        pass
-    def input(self, sm):
-        pass
-    
-    def draw(self, sm):
-        
-        red = max(0,min(255, self.player.v_y*5))
-        self.window.fill((red, 255, 255-red))
-    
-        for entity in self.all_sprites:
-            self.window.blit(entity.surf, entity.rect)
-            
-        self.window.blit(self.player.surf, self.player.rect)
-        
-        self.screen.fill(s.BLACK)
-        self.screen.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
-        
-        font = pygame.font.SysFont('Arial', 16)
-        fps = font.render(f"FPS: {round(self.clock.get_fps(),2)}", True, (255,255,255))
-        speed = font.render(f"Speed: {round(self.player.v_y,1)}",True,(255,255,255))
-        ticks = font.render(f"Ticks: {self.ticks}",True,(255,255,255))
-        distance_left = font.render(f"Distance left: {int(s.TRACK_LENGTH-self.player.s_y)}",True,(255,255,255))
-        
-        self.screen.blit(fps,(820,20))
-        self.screen.blit(speed, (820, 60))
-        self.screen.blit(ticks, (820, 100))
-        self.screen.blit(distance_left,(820,140))
-    
     
 class WinnerScene(Scene):
     def __init__(self):
@@ -409,13 +501,3 @@ class IntroScene(Scene):
         pass
     
     
-class PenaltyScene(Scene):
-    def __init__(self):
-        pass
-    def update(self, sm):
-        pass
-    def input(self, sm):
-        pass
-    
-    def draw(self, sm):
-        pass

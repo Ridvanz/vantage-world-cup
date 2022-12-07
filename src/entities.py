@@ -51,7 +51,7 @@ class Player(pygame.sprite.Sprite):
  
     def draw(self, surface):
         surface.blit(self.surf, self.rect)     
- 
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, size=s.PLAYER_SIZE, color=s.ORANGE):
         super(Player, self).__init__()

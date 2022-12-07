@@ -2,10 +2,10 @@ from pygame import Color
 import math, os
 
 FPS                   = 60
-SCREEN_WIDTH          = 1200
-SCREEN_HEIGHT         = 800
-WINDOW_WIDTH          = 400
-WINDOW_HEIGHT         = 800
+SCREEN_WIDTH          = 1920
+SCREEN_HEIGHT         = 1080
+WINDOW_WIDTH          = 1600
+WINDOW_HEIGHT         = 1000
 TITLE_SCREEN          = True
 RENDER                = True
 SPRITES               = True
