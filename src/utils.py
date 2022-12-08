@@ -17,3 +17,6 @@ def HSV(h=360, s=100, v=100, a=100):
     color.hsva = (h,s,v,a)
     
     return color
+  
+def clip(x, l=0, u=1):
+    return max(l, min(x, u))

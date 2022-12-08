@@ -4,7 +4,8 @@ import settings as s
 from pygame import Color 
 from utils import HSV
 import numpy as np
-
+from enum import Enum
+from entities import Player 
 class SceneManager:
     def __init__(self, display):
         self.display = display
@@ -63,35 +64,128 @@ class Scene:
     def render(self, sm):
         pass
 
+
+class State(Enum):
+    TARGET = 1
+    CURVE = 2
+    CONFIRM = 3
+    RUN = 4
+    SHOOT = 5
+    WIN = 6
+    
 class PenaltyScene(Scene):
+    
     def __init__(self):
         # self.window = pygame.Surface((s.WINDOW_WIDTH, s.WINDOW_HEIGHT))
         
         self.window = pygame.Surface((s.WINDOW_WIDTH, s.WINDOW_HEIGHT))
-        self.shooter  = 1
-        self.keeper   = 2
+        self.shooter  = Player()
+        self.keeper   = Player()
         self.field_color = HSV(h=0)
         self.field_width   = 50
         self.field_height  = 40
         self.penalty_area_width = 800
         self.penalty_area_width = 400
-        
+        self.mousepos = None
         self.ticks = 0
+        self.ball_start = (s.WINDOW_WIDTH/2, 800)
+        self.top_space = 100
+        self.bottom_space = 100
+        self.side_space = 100
+        self.state = State.TARGET
+        self.max_curve = 800
         
+        
+        self.next = True
+        self.previous = True
+    
     def onEnter(self):
         # globals.soundManager.playMusicFade('solace')
 
-        self.ball_x = s.WINDOW_WIDTH/2
-        self.ball_y = 800
+        self.dist_x = 0
+        self.dist_y = self.top_space - self.ball_start[1]
         
-        pass
-    
+        self.ball_x, self.ball_y = self.ball_start
+
+        self.curve_x = 0
+        
+        self.shooter_y = s.WINDOW_HEIGHT-self.bottom_space
+        self.keeper_x = s.WINDOW_WIDTH/2 
+        
     def input(self, sm):
-        pass
-    
+        
+        self.mouse_x, self.mouse_y = pygame.mouse.get_pos()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    self.next = True
+                elif event.button == 3:
+                    self.previous = True
+                  
+                
+      # get a list of all sprites that are under the mouse cursor
+    #   clicked_sprites = [s for s in sprites if s.rect.collidepoint(pos)]
+        
     def update(self, sm):
         
-        self.ticks +=1
+        
+        if self.state == State.TARGET:
+            
+            self.dist_x =  self.mouse_x - s.SCREEN_WIDTH/2
+            self.dist_x = max(-800, min(self.dist_x, 800))
+            
+            if self.next:
+                self.state = State.CURVE
+                self.next = False
+
+        elif self.state == State.CURVE:
+            
+            self.curve_x = self.mouse_x - s.SCREEN_WIDTH/2 - self.dist_x
+            self.curve_x = max(-self.max_curve, min(self.curve_x, self.max_curve))
+            
+            if self.next:
+                self.state = State.CONFIRM
+                self.next = False
+            elif self.previous:
+                self.state = State.TARGET
+                self.previous = False
+                self.curve_x = 0
+                
+        
+         
+        elif self.state == State.CONFIRM:
+            
+            # if clicked on ball
+            if self.next:
+                self.state = State.RUN
+                self.next = False
+            elif self.previous:
+                self.state = State.CURVE
+                self.previous = False        
+        
+        elif self.state == State.RUN:
+            
+            self.shooter_y -= 10 
+            # if clicked on ball
+            if self.shooter_y < self.ball_y+20:
+                self.state = State.SHOOT
+                self.ticks = 0
+       
+        
+        elif self.state == State.SHOOT:
+            
+            self.ticks +=1
+            
+            if self.ticks > len(self.trajectory_y):
+                self.state = State.WIN
+        
+            
+            if self.ball_y == 50:
+                self.state = State.WIN
+        
+        print(self.state)
+        print(self.ticks)
         pass
     
 
@@ -103,69 +197,87 @@ class PenaltyScene(Scene):
         pygame.draw.rect(self.window, s.WHITE, (-50, 100, (s.WINDOW_WIDTH+100), (s.WINDOW_HEIGHT)), 10)
         pygame.draw.rect(self.window, s.WHITE, (50, 100, (s.WINDOW_WIDTH-2*50), (s.WINDOW_HEIGHT-2*50-50)), 10)
         pygame.draw.rect(self.window, s.WHITE, (400, -50, 800, 160), 10)
+        pygame.draw.rect(self.window, s.WHITE, (400, -50, 800, 160),)
         pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2, 800), 10)
-        # pygame.draw.circle(self.window, s.WHITE, (400, 400), 10)
-        
-        power = 50
 
-                
-        dist_x = -400
-        dist_y = 800-100
-        curve_x = 100
         
-        duration = 20
-        ball_dx = dist_x / duration
-        ball_dy = dist_y / duration
-        
-        # ball_dy = 10
-        # travel_time =  dist_y / ball_dy
-        # ball_dx = dist_x / travel_time
-        # ball_dy = dist_y / travel_time
-        
-        if self.ticks > 60:
+        trajectory_y, trajectory_x_mean, trajectory_x_left, trajectory_x_right = self._get_trajectory(self.dist_x, self.dist_y, self.curve_x, self.shooter.power, self.shooter.accuracy, self.shooter.curve)
 
-            ((self.ticks-60)/duration)**2
-            
-            self.ball_x += ball_dx
-            self.ball_y -= ball_dy
+        coords = [(self.ball_start[0]+trajectory_x_mean[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
+        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
         
+        coords = [(self.ball_start[0]+trajectory_x_left[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
+        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
         
-        if self.ball_y < 50:
+        coords = [(self.ball_start[0]+trajectory_x_right[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
+        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
+        
+        if self.state == State.CONFIRM:
+            self.trajectory_x, self.trajectory_y = self._get_trajectory(self.dist_x, self.dist_y, self.curve_x, self.shooter.power, self.shooter.accuracy, self.shooter.curve, probabalistic=True)
+        
+        elif self.state == State.SHOOT:
+            i = self.ticks-1
+            self.ball_x = self.ball_start[0]+self.trajectory_x[i]
+            self.ball_y = self.ball_start[1]+self.trajectory_y[i]
+        
+        elif self.state == State.WIN:
+            pygame.draw.circle(self.window, s.RED, (400, 200), 30)
             
             if self.ball_x > 400 and self.ball_x < 800:
                 
                 pygame.draw.circle(self.window, s.ORANGE, (100, 200), 30)
+                
+                self.shooter.scored()
+                
             else:
-                pygame.draw.circle(self.window, s.RED, (400, 200), 30)
+                pygame.draw.circle(self.window, s.BLACK, (100, 200), 30)
                 
-            
+        
+                self.keeper.scored()
                 
-        trajectory = self._get_trajectory(dist_x, dist_y, curve_x, power)
-        print(trajectory)
-             
 
+        error = self.keeper_x - self.ball_x
+             
         pygame.draw.circle(self.window, s.ORANGE, (self.ball_x, self.ball_y), 30)
         
         pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2-395, 100), 5)
         pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2+395, 100), 5)
         
-        
-        pygame.draw.circle(self.window, s.RED, (s.WINDOW_WIDTH/2, 100), 40)
-        pygame.draw.circle(self.window, s.BLUE, (s.WINDOW_WIDTH/2, 950), 40)
-        
+        pygame.draw.circle(self.window, s.RED, (self.keeper_x, self.top_space), 40)
+        pygame.draw.circle(self.window, s.BLUE,(s.WINDOW_WIDTH/2, self.shooter_y), 40)
         
         sm.display.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
         # red = max(0,min(255, self.player.v_y*5))
     
-    def _get_trajectory(self, dist_x, dist_y, curve_x, speed):
+    def _get_trajectory(self, dist_x, dist_y, curve_x, power, accuracy, curve, probabalistic=False):
         
-        duration = 120 - speed
-        frames = np.linspace(0,1, duration)
+    
+        straight_sigma = 1600/(10+accuracy)
+        curve_sigma = abs(2*curve_x)/(1+curve)
+        
+        duration = 150 - power
+        
+        frames = np.linspace(0, 1, duration)
         
         ball_y = frames * dist_y
-        ball_x = frames * (dist_x + curve_x) - frames**2 * curve_x
         
-        return ball_x, ball_y
+        if probabalistic:
+            
+            sigma = straight_sigma+curve_sigma
+            deviation = np.random.normal(scale=sigma)
+
+            ball_x = frames * (dist_x + curve_x + deviation) - frames**2 * curve_x
+
+            return ball_x, ball_y
+        
+        else:
+            
+            ball_x_mean = frames * (dist_x + curve_x) - frames**2 * curve_x
+            ball_x_left = frames * (dist_x + curve_x - 3*(straight_sigma + curve_sigma)) - frames**2 * curve_x
+            ball_x_right = frames * (dist_x + curve_x + 3*(straight_sigma + curve_sigma)) - frames**2 * curve_x
+            
+            return ball_y, ball_x_mean, ball_x_left, ball_x_right
+    
         # for entity in self.all_sprites:
         #     self.window.blit(entity.surf, entity.rect)
             
