@@ -2,7 +2,7 @@ import pygame
 import utils
 import settings as s
 from pygame import Color 
-from utils import HSV
+from utils import HSV, clip
 import numpy as np
 from enum import Enum
 from entities import Player 
@@ -36,7 +36,7 @@ class SceneManager:
         self.exitScene()
         self.scenes.append(scene)
         self.enterScene()
-         
+        
     def pop(self):
         self.exitScene()
         self.scenes.pop()
@@ -82,8 +82,8 @@ class PenaltyScene(Scene):
         self.shooter  = Player()
         self.keeper   = Player()
         self.field_color = HSV(h=0)
-        self.field_width   = 50
-        self.field_height  = 40
+        self.goal_x = 400
+        self.goal_size = 800
         self.penalty_area_width = 800
         self.penalty_area_width = 400
         self.mousepos = None
@@ -94,11 +94,13 @@ class PenaltyScene(Scene):
         self.side_space = 100
         self.state = State.TARGET
         self.max_curve = 800
-        
-        
+        self.enter = False
+        self.mouse_x = 0
+        self.mouse_y = 0
         self.next = True
         self.previous = True
-    
+
+
     def onEnter(self):
         # globals.soundManager.playMusicFade('solace')
 
@@ -122,13 +124,19 @@ class PenaltyScene(Scene):
                     self.next = True
                 elif event.button == 3:
                     self.previous = True
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    self.enter = True
+                    print(self.enter)
+                else:
+                    self.enter = False
                   
                 
       # get a list of all sprites that are under the mouse cursor
     #   clicked_sprites = [s for s in sprites if s.rect.collidepoint(pos)]
         
     def update(self, sm):
-        
         
         if self.state == State.TARGET:
             
@@ -153,7 +161,6 @@ class PenaltyScene(Scene):
                 self.curve_x = 0
                 
         
-         
         elif self.state == State.CONFIRM:
             
             # if clicked on ball
@@ -168,7 +175,7 @@ class PenaltyScene(Scene):
             
             self.shooter_y -= 10 
             # if clicked on ball
-            if self.shooter_y < self.ball_y+20:
+            if self.shooter_y < self.ball_start[1]+20:
                 self.state = State.SHOOT
                 self.ticks = 0
        
@@ -180,12 +187,16 @@ class PenaltyScene(Scene):
             if self.ticks > len(self.trajectory_y):
                 self.state = State.WIN
         
-            
-            if self.ball_y == 50:
-                self.state = State.WIN
         
-        print(self.state)
-        print(self.ticks)
+        elif self.state == State.WIN:
+            # if self.next:
+            #     self.state = State.TARGET
+            if self.enter:
+                sm.pop()
+                sm.push(PenaltyScene())
+
+        # print(self.state)
+        # print(self.ticks)
         pass
     
 
@@ -196,23 +207,16 @@ class PenaltyScene(Scene):
 
         pygame.draw.rect(self.window, s.WHITE, (-50, 100, (s.WINDOW_WIDTH+100), (s.WINDOW_HEIGHT)), 10)
         pygame.draw.rect(self.window, s.WHITE, (50, 100, (s.WINDOW_WIDTH-2*50), (s.WINDOW_HEIGHT-2*50-50)), 10)
-        pygame.draw.rect(self.window, s.WHITE, (400, -50, 800, 160), 10)
-        pygame.draw.rect(self.window, s.WHITE, (400, -50, 800, 160),)
+        pygame.draw.rect(self.window, s.WHITE, (self.goal_x, -50, self.goal_size, 160), 10)
+        pygame.draw.rect(self.window, s.WHITE, (self.goal_x, -50, self.goal_size, 160),)
         pygame.draw.circle(self.window, s.WHITE, (s.WINDOW_WIDTH/2, 800), 10)
 
-        
-        trajectory_y, trajectory_x_mean, trajectory_x_left, trajectory_x_right = self._get_trajectory(self.dist_x, self.dist_y, self.curve_x, self.shooter.power, self.shooter.accuracy, self.shooter.curve)
-
-        coords = [(self.ball_start[0]+trajectory_x_mean[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
-        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
-        
-        coords = [(self.ball_start[0]+trajectory_x_left[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
-        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
-        
-        coords = [(self.ball_start[0]+trajectory_x_right[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
-        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
+        if self.state == State.TARGET or self.state == State.CURVE:
+            
+            self._draw_trajectories(s.RED)
         
         if self.state == State.CONFIRM:
+            self._draw_trajectories(s.BLUE)
             self.trajectory_x, self.trajectory_y = self._get_trajectory(self.dist_x, self.dist_y, self.curve_x, self.shooter.power, self.shooter.accuracy, self.shooter.curve, probabalistic=True)
         
         elif self.state == State.SHOOT:
@@ -221,9 +225,8 @@ class PenaltyScene(Scene):
             self.ball_y = self.ball_start[1]+self.trajectory_y[i]
         
         elif self.state == State.WIN:
-            pygame.draw.circle(self.window, s.RED, (400, 200), 30)
             
-            if self.ball_x > 400 and self.ball_x < 800:
+            if self.ball_x > self.goal_x and self.ball_x < (self.goal_x + self.goal_size):
                 
                 pygame.draw.circle(self.window, s.ORANGE, (100, 200), 30)
                 
@@ -235,8 +238,15 @@ class PenaltyScene(Scene):
         
                 self.keeper.scored()
                 
-
-        error = self.keeper_x - self.ball_x
+                
+        for i in range(self.keeper.score):
+            pygame.draw.circle(self.window, s.BLUE, (50, i*100+100), 20)
+        
+        self.p_gain = 0.1
+        
+        error =  self.ball_x - self.keeper_x
+        
+        self.keeper_x += clip(error*self.p_gain, -10, 10)
              
         pygame.draw.circle(self.window, s.ORANGE, (self.ball_x, self.ball_y), 30)
         
@@ -246,6 +256,8 @@ class PenaltyScene(Scene):
         pygame.draw.circle(self.window, s.RED, (self.keeper_x, self.top_space), 40)
         pygame.draw.circle(self.window, s.BLUE,(s.WINDOW_WIDTH/2, self.shooter_y), 40)
         
+        
+
         sm.display.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
         # red = max(0,min(255, self.player.v_y*5))
     
@@ -278,25 +290,22 @@ class PenaltyScene(Scene):
             
             return ball_y, ball_x_mean, ball_x_left, ball_x_right
     
+    
+    def _draw_trajectories(self, color):
+        
+        trajectory_y, trajectory_x_mean, trajectory_x_left, trajectory_x_right = self._get_trajectory(self.dist_x, self.dist_y, self.curve_x, self.shooter.power, self.shooter.accuracy, self.shooter.curve)
+
+        coords = [(self.ball_start[0]+trajectory_x_mean[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
+        pygame.draw.lines(self.window, color, False, coords, width=10)
+        
+        coords = [(self.ball_start[0]+trajectory_x_left[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
+        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
+        
+        coords = [(self.ball_start[0]+trajectory_x_right[i], self.ball_start[1]+trajectory_y[i]) for i in range(len(trajectory_y))]
+        pygame.draw.lines(self.window, s.RED, False, coords, width=10)
         # for entity in self.all_sprites:
         #     self.window.blit(entity.surf, entity.rect)
             
-        # self.window.blit(self.player.surf, self.player.rect)
-        
-        # self.screen.fill(s.BLACK)
-        # self.screen.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
-        
-        # font = pygame.font.SysFont('Arial', 16)
-        # fps = font.render(f"FPS: {round(self.clock.get_fps(),2)}", True, (255,255,255))
-        # speed = font.render(f"Speed: {round(self.player.v_y,1)}",True,(255,255,255))
-        # ticks = font.render(f"Ticks: {self.ticks}",True,(255,255,255))
-        # distance_left = font.render(f"Distance left: {int(s.TRACK_LENGTH-self.player.s_y)}",True,(255,255,255))
-        
-        # self.screen.blit(fps,(820,20))
-        # self.screen.blit(speed, (820, 60))
-        # self.screen.blit(ticks, (820, 100))
-        # self.screen.blit(distance_left,(820,140))
-    
 
 class MainMenuScene(Scene):
     def __init__(self):
@@ -330,77 +339,14 @@ class MainMenuScene(Scene):
     
     def render(self, sm):
         # background
-        sm.display.fill(s.WHITE)
-        # utils.drawText(screen, 'Main Menu', 50, 50, globals.WHITE, 255)
-        # self.enter.draw(screen)
-        # self.esc.draw(screen)
+        sm.display.fill(s.BLACK)
 
-
-
-
-        red = max(0,min(255, self.player.v_y*5))
-        self.window.fill((red, 255, 255-red))
-    
-        for entity in self.all_sprites:
-            self.window.blit(entity.surf, entity.rect)
-            
-        self.window.blit(self.player.surf, self.player.rect)
-        
-        self.screen.fill(s.BLACK)
-        self.screen.blit(self.window, ((s.SCREEN_WIDTH-s.WINDOW_WIDTH)/2, (s.SCREEN_HEIGHT-s.WINDOW_HEIGHT)/2))
-        
         font = pygame.font.SysFont('Arial', 16)
-        fps = font.render(f"FPS: {round(self.clock.get_fps(),2)}", True, (255,255,255))
-        speed = font.render(f"Speed: {round(self.player.v_y,1)}",True,(255,255,255))
-        ticks = font.render(f"Ticks: {self.ticks}",True,(255,255,255))
-        distance_left = font.render(f"Distance left: {int(s.TRACK_LENGTH-self.player.s_y)}",True,(255,255,255))
-        
-        self.screen.blit(fps,(820,20))
-        self.screen.blit(speed, (820, 60))
-        self.screen.blit(ticks, (820, 100))
-        self.screen.blit(distance_left,(820,140))
-        
-        pygame.display.update()
-        
-        self.clock.tick(s.FPS)
+        fps = font.render(f"Welcome", True, (255,255,255))
+        sm.display.blit(fps,(820,800))
 
 
 
-
-# class PenaltyScene(Scene):
-#     def __init__(self):
-#         self.esc = ui.ButtonUI(pygame.K_ESCAPE, '[Esc=quit]', 50, 300)
-#     def onEnter(self):
-#         globals.soundManager.playMusicFade('solace')
-#     def update(self, sm, inputStream):
-#         self.esc.update(inputStream)
-#     def input(self, sm, inputStream):
-#         if inputStream.keyboard.isKeyPressed(pygame.K_a):
-#             globals.curentLevel = max(globals.curentLevel-1, 1)
-#         if inputStream.keyboard.isKeyPressed(pygame.K_d):
-#             globals.curentLevel = min(globals.curentLevel+1, globals.lastCompletedLevel)
-#         if inputStream.keyboard.isKeyPressed(pygame.K_RETURN):
-#             level.loadLevel(globals.curentLevel)
-#             sm.push(FadeTransitionScene([self], [GameScene()]))
-
-#         if inputStream.keyboard.isKeyPressed(pygame.K_ESCAPE):
-#             sm.pop()
-#             sm.push(FadeTransitionScene([self], []))
-#     def draw(self, sm, screen):
-#         # background
-#         screen.fill(globals.DARK_GREY)
-#         utils.drawText(screen, 'Level Select', 50, 50, globals.WHITE, 255)
-#         self.esc.draw(screen)
-
-#         # draw level select menu
-#         for levelNumber in range(1, globals.maxLevel+1):
-#             c = globals.WHITE
-#             if levelNumber == globals.curentLevel:
-#                 c = globals.GREEN
-#             a = 255
-#             if levelNumber > globals.lastCompletedLevel:
-#                 a = 100
-#             utils.drawText(screen, str(levelNumber), levelNumber*100, 100, c, a)
 
 class PlayerSelectScene(Scene):
     def __init__(self):

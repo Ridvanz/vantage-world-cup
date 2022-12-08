@@ -34,7 +34,7 @@ class GameController:
     
     def _get_SceneManager(self):
         sceneManager = scene.SceneManager(self.display)
-        mainMenu = scene.PenaltyScene()
+        mainMenu = scene.MainMenuScene()
         sceneManager.push(mainMenu)
         
         return sceneManager
@@ -43,11 +43,11 @@ class GameController:
         """The main game loop that continuously runs after the game has been initialized."""
         while self.running:
             
-            self.tick_clock()
             self.sceneManager.input()
             self.sceneManager.update()
             self.sceneManager.render()
             self.handle_events()
+            self.tick_clock()
             # self.check_env_changes()
 
     def tick_clock(self):

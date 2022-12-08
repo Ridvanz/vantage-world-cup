@@ -7,7 +7,7 @@ class Ball(pygame.sprite.Sprite):
       def __init__(self):
         super().__init__() 
         
-        self.radius = (100, 100)
+        self.radius = 20
         self.surf = pygame.Surface(size)
         self.surf.fill(BLUE)
 
@@ -42,8 +42,12 @@ class Player(pygame.sprite.Sprite):
         self.power = 50
         self.accuracy = 50
         self.curve = 50 
+        
+        self.reach = 50
         self.speed = 50
-        self.speed = 50
+        self.predict = 50
+        
+        
         
     def scored(self):
         self.score =+ 1
