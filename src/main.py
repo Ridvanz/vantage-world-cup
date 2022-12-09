@@ -1,23 +1,11 @@
-
-#%%
-
-import pygame, sys
-import random
-import settings as s
-import entities as e
 from controller import GameController
+from simulate import simulation
 
 def main():
-                                                        # Get all game states
-    controller = GameController()                        # Load game controller
-    controller.run()                                                                # Run this bad boy!
+
+    controller = GameController()
+    controller.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-
-# P1 = e.Player()
-# E1 = e.Enemy()
- 
-# pygame.quit()
-# sys.exit()  !

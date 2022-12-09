@@ -1,0 +1,19 @@
+{
+    "name": "One Shot Bob",
+    "colors": {
+      "primary": [125, 125, 125],
+      "secondary": [255, 255, 255]
+    },
+    "stats": {
+      "shooter": {
+        "power": 100,
+        "accuracy": 100,
+        "curve": 100
+      },
+      "keeper": {
+        "reach": 0,
+        "speed": 0,
+        "predict": 0
+      }
+    }
+  }

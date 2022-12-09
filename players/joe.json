@@ -1,0 +1,19 @@
+{
+    "name": "Average Joe",
+    "colors": {
+      "primary": [255, 255,255],
+      "secondary": [125, 125, 125]
+    },
+    "stats": {
+      "shooter": {
+        "power": 50,
+        "accuracy": 50,
+        "curve": 50
+      },
+      "keeper": {
+        "reach": 50,
+        "speed": 50,
+        "predict": 50
+      }
+    }
+  }

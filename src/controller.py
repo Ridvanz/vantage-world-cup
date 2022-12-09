@@ -2,12 +2,12 @@ import pygame
 import settings as s
 import scene
 from sound import SoundManager
+from tournament import TournamentSystem
+from utils import load_jsons
 import sys
-
+import random
 class GameController:
-    """The Controller object is the heart of this program. It contains our main game loop.
-    Tick Clock, Handle Events, Update Game State, Render Graphics, Check for any environment changes.
-    The main game loop is the Controller's run method."""
+
     def __init__(self):
         
         pygame.init()
@@ -15,10 +15,11 @@ class GameController:
         self.clock = self._get_clock()
         self.sceneManager = self._get_SceneManager()
         self.soundManager = SoundManager()
-        
+        self.tournamentSystem = TournamentSystem(self.sceneManager)
         # self.event_handler = EventHandler()
         self.running = True
-
+        self.setup_tournement()
+        
     def _get_display(self):
         if s.RENDER:
             display = pygame.display.set_mode((s.SCREEN_WIDTH, s.SCREEN_HEIGHT))
@@ -34,15 +35,27 @@ class GameController:
     
     def _get_SceneManager(self):
         sceneManager = scene.SceneManager(self.display)
-        mainMenu = scene.MainMenuScene()
-        sceneManager.push(mainMenu)
+        intro = scene.IntroScene()
+        sceneManager.push(intro)
         
         return sceneManager
 
-    def run(self):
-        """The main game loop that continuously runs after the game has been initialized."""
-        while self.running:
+    def setup_tournement(self):
+        self.tournamentSystem.get_players()
+
+    def run(self, tournament = True):
+        
+        if tournament:
+            self.setup_tournement()
+            players = self.tournamentSystem.players[:2]
+            random.shuffle(players)
+            P1, P2 = players
             
+            self.sceneManager.P1 = P1
+            self.sceneManager.P2 = P2
+            
+        while self.running:
+            load_jsons()
             self.sceneManager.input()
             self.sceneManager.update()
             self.sceneManager.render()
@@ -55,46 +68,18 @@ class GameController:
 
     def handle_events(self):
         # self.event_handler.handle_events(self.state.actor)
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or\
-                (event.type == pygame.KEYDOWN and\
-                event.key == pygame.K_ESCAPE):
-                self.running = False
+        # print(len(pygame.event.get()))
+        # for event in pygame.event.get():
+        #     if event.type == pygame.QUIT or\
+        #         (event.type == pygame.KEYDOWN and\
+        #         event.key == pygame.K_ESCAPE):
+        #         self.running = False
                 
-                pygame.quit()
-                sys.exit()    
-                
+        #         pygame.quit()
+        #         sys.exit()    
+        pass
     # def try_quit(e):
     #     if e.type == QUIT or\
     #     (e.type == KEYDOWN and\
     #     e.key == K_ESCAPE):
             
-
-    # def update_state(self):
-    #     self.state.update()
-    #     if self.state.is_done:
-    #         self.previous_state = self.state
-    #         self.state = self.game_states[self.previous_state.next_state](persist=self.previous_state.persist)
-    #         self.previous_state.cleanup()
-
-    # def render_state(self):
-    #     self.state.render(self.display)
-
-    # def check_env_changes(self):
-    #     """Checks to see if any environment changes occur during a single loop of the game. Examples below:
-    #     Connecting/Disconnecting input devices
-    #     Changing audio device
-    #     Resolution / Window resize"""
-    #     self.check_input_device_change()
-    #     self.check_audio_device_change()
-    #     self.check_resolution_change()
-
-    # def check_input_device_change(self):
-    #     pass
-
-    # def check_audio_device_change(self):
-    #     pass
-
-    # def check_resolution_change(self):
-    #     pass

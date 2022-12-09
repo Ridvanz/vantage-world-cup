@@ -3,6 +3,23 @@ from pygame.locals import QUIT, KEYDOWN, K_ESCAPE
 from pygame.font import Font
 import settings as s
 from pygame import Color
+import json
+import glob
+import os
+
+
+def load_jsons():
+    
+    folder = os.path.join(os.path.dirname( __file__ ), '..', 'players')
+    filenames = glob.glob(folder + "\\*")
+
+    dicts = []
+    for file in filenames:
+        with open(file, 'r') as f:
+            data = json.load(f)
+            dicts.append(data)
+    
+    return dicts
 
 def try_quit(e):
     if e.type == QUIT or\
