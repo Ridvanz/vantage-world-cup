@@ -85,10 +85,9 @@ def simulation(shooter_stats = (50,50,50), keeper_stats = (50,50,50),  u_x = 0, 
     shooter.curve = shooter_stats[2]
     
     keeper = Player()
-    keeper.reach = shooter_stats[0]
-    keeper.speed = shooter_stats[1]
-    keeper.predict = shooter_stats[2]
-    
+    keeper.reach = keeper_stats[0]
+    keeper.speed = keeper_stats[1]
+    keeper.predict = keeper_stats[2]
     
     shooter.shooter_radius = 40 + shooter.power/4
     keeper.keeper_radius = 40 + keeper.reach/4
