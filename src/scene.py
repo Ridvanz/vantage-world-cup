@@ -10,11 +10,6 @@ import sys
 from simulate import simulate_shot
 import pygame.gfxdraw
 
-
-P1_score = 0
-P2_score = 0
-
-
 class SceneManager:
     def __init__(self, display):
         self.display = display
@@ -267,7 +262,7 @@ class PenaltyScene(Scene):
         self.draw_field()
 
         if self.state == State.TARGET or self.state == State.CURVE:
-
+            self.draw_name()
             self._draw_trajectories(HSV(0, 80, 90), 5)
 
         if self.state == State.CONFIRM:
@@ -299,7 +294,14 @@ class PenaltyScene(Scene):
                 (s.SCREEN_HEIGHT - s.WINDOW_HEIGHT) / 2,
             ),
         )
-        # red = max(0,min(255, self.player.v_y*5))
+
+    def draw_name(self):
+
+        font = pygame.font.SysFont("Arial", 50)
+        text = font.render(f"{self.shooter.name}", True, (120, 120, 255))
+        self.window.blit(
+        text, (s.WINDOW_WIDTH / 2 + 100,  s.WINDOW_HEIGHT / 2 + 100)
+        )
 
     def draw_scoreboard(self, sm):
 

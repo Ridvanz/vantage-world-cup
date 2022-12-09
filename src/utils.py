@@ -14,7 +14,7 @@ def load_jsons():
     # filenames = glob.glob(folder + "\\*")
 
     dicts = []
-    for file in ['players/bob.json', 'players/joe.json']:
+    for file in ['players/samster.json', 'players/bob.json']:
         with open(file, 'r') as f:
             data = json.load(f)
             dicts.append(data)
