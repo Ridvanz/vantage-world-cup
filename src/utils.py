@@ -10,16 +10,17 @@ import os
 
 def load_jsons():
     
-    folder = os.path.join(os.path.dirname( __file__ ), '..', 'players')
-    filenames = glob.glob(folder + "\\*")
+    # folder = os.path.join(os.path.dirname( __file__ ), '..', 'players')
+    # filenames = glob.glob(folder + "\\*")
 
     dicts = []
-    for file in filenames:
+    for file in ['players/samster.json', 'players/bob.json']:
         with open(file, 'r') as f:
             data = json.load(f)
             dicts.append(data)
     
     return dicts
+
 
 def try_quit(e):
     if e.type == QUIT or\

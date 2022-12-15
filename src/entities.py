@@ -2,28 +2,7 @@ import pygame
 import random
 import settings as s
 import glob
-from utils import clip
-
-# class Ball(pygame.sprite.Sprite):
-#       def __init__(self):
-#         super().__init__() 
-        
-#         self.radius = 20
-#         self.surf = pygame.Surface(size)
-#         self.surf.fill(BLUE)
-
-#         self.rect = self.surf.get_rect()
-#         self.rect.center=(random.randint(40,s.SCREEN_WIDTH-40),0) 
- 
-#       def move(self):
-#         self.rect.move_ip(0,10)
-#         if (self.rect.bottom > 600):
-#             self.rect.top = 0
-#             self.rect.center = (random.randint(30, 370), 0)
- 
-#       def draw(self, surface):
-#         surface.blit(self.surf, self.rect) 
- 
+from utils import clip 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, ):
@@ -42,7 +21,7 @@ class Player(pygame.sprite.Sprite):
         self.speed = 50
         self.predict = 50
         
-        self.max_points = 600
+        self.max_points = 300
         
         self.shooter_radius = 40 + self.power/4
         self.keeper_radius = 40 + self.reach/4
